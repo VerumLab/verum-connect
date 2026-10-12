@@ -27,7 +27,8 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "prepack": "node -e \"require('fs').copyFileSync('../../../LICENSE','LICENSE')\""
   },
   "dependencies": {
     "@noble/ciphers": "^1.2.1",

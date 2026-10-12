@@ -11,4 +11,5 @@ export {
   CODE_SYMBOLS,
   formatCode,
   normalizeCode,
+  parsePairingUri,
 } from '@verumlab/connect-protocol';
