@@ -1,0 +1,41 @@
+{
+  "name": "verum-connect",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/shared/protocol",
+    "packages/dapp/shared/*",
+    "packages/dapp/sdk/react",
+    "packages/dapp/sdk/wagmi",
+    "packages/dapp/bookmarklet",
+    "packages/dapp/sdk/examples/*",
+    "packages/wallet/sdk",
+    "packages/wallet/hub"
+  ],
+  "scripts": {
+    "build": "npm run build -w @verumlab/connect-protocol && npm run build -w @verumlab/connect-dapp && npm run build -w @verumlab/connect-wallet && npm run build -w @verumlab/connect-ui && npm run build -w @verumlab/connect-wagmi && npm run build -w @verumlab/connect-react && npm run build -w @verumlab/connect-hub && npm run build -w @verumlab/connect-bookmarklet",
+    "build:hub": "npm run build -w @verumlab/connect-hub",
+    "dev:hub": "npm run dev -w @verumlab/connect-hub",
+    "dev:demo": "npm run dev -w @verumlab/standalone-demo",
+    "dev:rainbowkit": "npm run dev -w @verumlab/rainbowkit-demo",
+    "dev:connectkit": "npm run dev -w @verumlab/connectkit-demo",
+    "dev:web3onboard": "npm run dev -w @verumlab/web3onboard-demo",
+    "test": "npm run build && node --test packages/shared/protocol/test/*.test.mjs test/*.test.mjs",
+    "relay:check": "node scripts/relay-check.mjs",
+    "typecheck": "tsc -b packages/shared/protocol packages/dapp/shared/core packages/dapp/shared/ui packages/dapp/sdk/wagmi packages/dapp/sdk/react packages/wallet/sdk",
+    "deploy:hub": "node scripts/prepare-deploy.mjs hub",
+    "deploy:demo": "node scripts/prepare-deploy.mjs demo"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0",
+    "ws": "^8.21.3"
+  },
+  "overrides": {
+    "cuer": {
+      "qr": "0.5.5"
+    }
+  }
+}

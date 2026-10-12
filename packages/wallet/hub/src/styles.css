@@ -1,0 +1,532 @@
+:root {
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --surface-alt: #f0efec;
+  --border: #dedbd4;
+  --text: #1a1917;
+  --muted: #6b6862;
+  --accent: #b5451b;
+  --accent-soft: #fbeee7;
+  --ok: #2f7d4f;
+  --warn: #9a6a12;
+  --danger: #a32b1c;
+  /* Ink for text on an accent fill: a bright accent needs dark ink. */
+  --on-accent: #ffffff;
+  --radius: 14px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+/* Flat, not nested: older Android WebViews lack CSS nesting. Guarded on the
+   attribute's absence, so adding a theme never means editing this list. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #16150f;
+    --surface: #1f1e18;
+    --surface-alt: #272620;
+    --border: #35332b;
+    --text: #f2f0e9;
+    --muted: #9c988d;
+    --accent: #e8703f;
+    --accent-soft: #2c1d15;
+    --ok: #63b587;
+    --warn: #d3a44b;
+    --danger: #e0705c;
+  }
+}
+
+/* Repeated, not shared: an explicit dark choice must win on a light system too, and
+   light-dark() is ruled out by the same old WebViews. */
+:root[data-theme="dark"] {
+  --bg: #16150f;
+  --surface: #1f1e18;
+  --surface-alt: #272620;
+  --border: #35332b;
+  --text: #f2f0e9;
+  --muted: #9c988d;
+  --accent: #e8703f;
+  --accent-soft: #2c1d15;
+  --ok: #63b587;
+  --warn: #d3a44b;
+  --danger: #e0705c;
+}
+
+:root[data-theme="rainbow"] {
+  --bg: #002d59;
+  --surface: #033a6d;
+  --surface-alt: #06457e;
+  --border: #1b5c96;
+  --text: #eef5ff;
+  --muted: #a8c6e4;
+  --accent: #ff6bb3;
+  --accent-soft: #45182b;
+  --ok: #5cf07a;
+  --warn: #ffd633;
+  --danger: #ff7d93;
+  --on-accent: #0a1f3d;
+  --rainbow: linear-gradient(90deg, #ff0000, #ff9900, #ffff00, #33ff00, #0099ff, #6633ff);
+}
+
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="rainbow"] { color-scheme: dark; }
+
+:root[data-theme="rainbow"] body {
+  background-image:
+    radial-gradient(1px 1px at 11% 17%, #ffffff, transparent),
+    radial-gradient(1px 1px at 74% 8%, #ffffff, transparent),
+    radial-gradient(1px 1px at 42% 61%, #ffffff, transparent),
+    radial-gradient(1px 1px at 88% 47%, #ffffff, transparent),
+    radial-gradient(1px 1px at 23% 84%, #ffffff, transparent),
+    radial-gradient(1px 1px at 61% 33%, #ffffff, transparent);
+  background-size: 320px 320px;
+}
+
+:root[data-theme="rainbow"] .active-card,
+:root[data-theme="rainbow"] .notice {
+  background-image: var(--rainbow);
+  background-repeat: no-repeat;
+  background-size: 100% 3px;
+  background-position: top left;
+}
+
+/* The Ethereum diamond launching straight up on a rainbow flame: two pseudo-elements
+   joined by construction (same keyframes), position: fixed so they stay out of the
+   body's grid, and a transform-only animation so it composites. */
+:root[data-theme="rainbow"] {
+  --rocket-x: 13vw;
+  --rocket-size: 26px;
+  --rocket-base: -70px;
+  --flame-height: 66px;
+}
+
+/* The flame: hard-edged bands (a gradient muddies), a cone narrow at the nozzle, a
+   faded end, and drop-shadow last so the glow follows the outline. */
+:root[data-theme="rainbow"] body::after {
+  content: "";
+  position: fixed;
+  left: var(--rocket-x);
+  margin-left: -18px;
+  bottom: calc(var(--rocket-base) - var(--flame-height));
+  width: 36px;
+  height: var(--flame-height);
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%, #ffffff 7%,
+    #ff0000 7%, #ff0000 22%,
+    #ff9900 22%, #ff9900 37%,
+    #ffff00 37%, #ffff00 52%,
+    #33ff00 52%, #33ff00 67%,
+    #0099ff 67%, #0099ff 82%,
+    #6633ff 82%, #6633ff 100%
+  );
+  -webkit-clip-path: polygon(36% 0%, 64% 0%, 100% 100%, 0% 100%);
+  clip-path: polygon(36% 0%, 64% 0%, 100% 100%, 0% 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  animation: launch 18s linear infinite, burn 1.4s ease-in-out infinite,
+             wander 108s steps(1, end) infinite;
+  animation-delay: 0s, 0s, var(--sky-seed, 0s);
+}
+
+:root[data-theme="rainbow"] body::before {
+  content: "";
+  position: fixed;
+  left: var(--rocket-x);
+  margin-left: calc(var(--rocket-size) / -2);
+  bottom: var(--rocket-base);
+  width: var(--rocket-size);
+  height: var(--rocket-size);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 417'%3E%3Cpath fill='%23fff' fill-opacity='.55' d='M127.96 0l-2.8 9.5v275.67l2.8 2.79 127.96-75.64z'/%3E%3Cpath fill='%23fff' d='M127.96 0L0 212.32l127.96 75.64V154.16z'/%3E%3Cpath fill='%23fff' fill-opacity='.55' d='M127.96 312.19l-1.58 1.92v98.2l1.58 4.6L256 236.59z'/%3E%3Cpath fill='%23fff' d='M127.96 416.91v-104.72L0 236.59z'/%3E%3Cpath fill='%23fff' fill-opacity='.3' d='M127.96 287.96l127.96-75.64-127.96-58.16z'/%3E%3Cpath fill='%23fff' fill-opacity='.55' d='M0 212.32l127.96 75.64v-133.8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  animation: launch 18s linear infinite, wander 108s steps(1, end) infinite;
+  animation-delay: 0s, var(--sky-seed, 0s);
+}
+
+@keyframes launch {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  8%   { opacity: 0.9; }
+  86%  { opacity: 0.9; }
+  100% { transform: translate3d(0, calc(-100vh - 300px), 0); opacity: 0; }
+}
+
+/* Which lane it launches from: six positions on a cycle six times the flight, held
+   with steps(1, end), every jump landing on a launch boundary where opacity is 0.
+   Kept off `transform`, which `launch` owns. */
+@keyframes wander {
+  0%     { left: 11vw; }
+  16.66% { left: 68vw; }
+  33.33% { left: 29vw; }
+  50%    { left: 84vw; }
+  66.66% { left: 47vw; }
+  83.33% { left: 7vw; }
+}
+
+/* Two animations, as two animations driving one property let one silently win. */
+@keyframes burn {
+  0%, 100% { filter: drop-shadow(0 0 7px rgba(255, 170, 60, 0.7)) brightness(1); }
+  50%      { filter: drop-shadow(0 0 11px rgba(255, 120, 40, 0.85)) brightness(1.18); }
+}
+
+/* Motion is decoration, so it is the first thing to go. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="rainbow"] body::after,
+  :root[data-theme="rainbow"] body::before { animation: none; opacity: 0; }
+}
+
+/* Guarded: without background-clip the transparent colour would erase the word. */
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  :root[data-theme="rainbow"] header h1 span {
+    background: var(--rainbow);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  /* dvh so the centring does not shift when mobile browser chrome hides. */
+  min-height: 100dvh;
+  display: flex;
+  /* A column: the terms footer is a second child, and as a row it shoved the card off
+     centre. */
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Vertically centred with `margin: auto` on the card, not justify-content, which
+   clips overflow at the top where it cannot be scrolled. */
+#app {
+  /* 440px, matching the dapp demo's main: the screens are compared side by side. */
+  width: 100%; max-width: 440px; margin: auto;
+  padding: 72px 16px;
+}
+
+/* Pinned to the viewport, not the column; fixed ignores body padding, hence the
+   safe-area inset. */
+.page-head {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  padding: 14px 16px;
+  padding-top: calc(14px + env(safe-area-inset-top));
+}
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+header h1 { font-size: 17px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+header h1 span { color: var(--accent); }
+header h1 .section {
+  font-style: normal; font-weight: 500; color: var(--muted);
+}
+header h1 .section::before { content: " · "; }
+
+/* The chip is a button, the only route to the account controls: clear the 42px
+   touch target. */
+.wallet-chip {
+  font-family: inherit; font-size: 12px; color: var(--muted); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 999px; padding: 7px 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px;
+  cursor: pointer; min-height: 0; font-weight: 400; text-align: left;
+}
+.wallet-chip:hover { background: var(--surface-alt); }
+.wallet-chip strong { color: var(--text); font-weight: 600; }
+
+.header-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+.chip-action {
+  font-family: inherit; font-size: 12px; font-weight: 550; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 7px 13px; min-height: 0;
+  white-space: nowrap; cursor: pointer;
+}
+.chip-action:hover { background: var(--surface-alt); }
+
+.theme-toggle {
+  font-family: inherit; font-size: 14px; line-height: 1; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 7px 10px; min-height: 0; cursor: pointer;
+}
+.theme-toggle:hover { background: var(--surface-alt); color: var(--text); }
+
+/* ---- Account sheet, opened from the chip. ---- */
+.sheet-backdrop {
+  position: fixed; inset: 0; background: rgb(0 0 0 / 0.42);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 16px; z-index: 50;
+}
+.sheet {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; width: 100%; max-width: 380px;
+  margin-top: 58px; box-shadow: 0 16px 48px -16px rgb(0 0 0 / 0.4);
+}
+.sheet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.sheet-head h3 { font-size: 15px; margin: 0; }
+.sheet-close {
+  border: none; background: none; color: var(--muted); font-size: 20px;
+  line-height: 1; padding: 4px 6px; min-height: 0; cursor: pointer;
+}
+.sheet .actions { margin-top: 14px; }
+.sheet .actions button { flex: 1; }
+
+/* ---- Scanner. ---- */
+.scan-frame {
+  position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden;
+  border-radius: 12px; background: #000; border: 1px solid var(--border);
+}
+.scan-frame video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.scan-big {
+  width: 100%; margin: 0 0 14px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  padding: 20px; border-radius: 14px;
+}
+.scan-big svg { width: 40px; height: 40px; }
+
+/* The connect code: one box per group, three to a row. 16px is the floor at which iOS
+   stops zooming on focus. */
+.code-boxes { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; }
+.code-boxes-row { display: flex; align-items: center; gap: 6px; }
+.code-sep { color: var(--muted); user-select: none; }
+.code-box {
+  flex: 1 1 0; min-width: 0; padding: 14px 0;
+  font-family: var(--mono); font-size: 18px; letter-spacing: 0;
+  text-align: center; text-transform: uppercase;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-alt); color: var(--text);
+}
+
+.pair-disclosure { margin-bottom: 10px; text-align: left; }
+.pair-disclosure > summary {
+  cursor: pointer; font-size: 13px; color: var(--muted); margin-bottom: 10px;
+  /* A summary's marker is drawn outside the box; inside puts it flush with the content
+     edge. */
+  list-style-position: inside;
+}
+.pair-disclosure > summary:hover { color: var(--text); }
+
+.or-rule {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11.5px; color: var(--muted); margin-bottom: 10px;
+}
+.or-rule::before, .or-rule::after {
+  content: ""; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ---- The active session: the largest thing on the page, the answer to "who is
+        asking". ---- */
+.active-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 14px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.12);
+}
+
+.eyebrow {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--muted); font-weight: 600; margin-bottom: 10px;
+}
+
+.dapp-identity { display: flex; align-items: center; gap: 13px; margin-bottom: 16px; }
+.dapp-icon {
+  width: 44px; height: 44px; border-radius: 11px; background: var(--surface-alt);
+  display: grid; place-items: center; font-size: 19px; font-weight: 650;
+  color: var(--accent); flex-shrink: 0; overflow: hidden;
+}
+.dapp-icon img { width: 100%; height: 100%; object-fit: cover; }
+.dapp-text { min-width: 0; }
+.dapp-name { font-size: 19px; font-weight: 640; letter-spacing: -0.015em; }
+.dapp-origin {
+  font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.code-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; background: var(--accent-soft); border-radius: 10px;
+  padding: 11px 13px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.code-label { font-size: 12px; color: var(--muted); }
+.code-words { font-family: var(--mono); font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
+
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.meta-item { background: var(--surface-alt); border-radius: 9px; padding: 9px 11px; min-width: 0; }
+.meta-key { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.meta-val { font-family: var(--mono); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.actions { display: flex; gap: 9px; flex-wrap: wrap; }
+
+button {
+  font-family: inherit; font-size: 14px; font-weight: 550; cursor: pointer;
+  border-radius: 10px; padding: 10px 15px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); transition: background 0.12s, border-color 0.12s;
+  min-height: 42px;
+}
+button:hover { background: var(--surface-alt); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button.primary:hover { filter: brightness(1.07); }
+button.danger { color: var(--danger); }
+
+/* ---- The other sessions. Present and switchable, visibly subordinate. ---- */
+.session-list { margin-top: 22px; }
+.session-list h2 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--muted); font-weight: 600; margin: 0 0 9px;
+}
+
+.session-row {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+  padding: 11px 13px; margin-bottom: 8px;
+}
+.session-row .dapp-icon { width: 32px; height: 32px; border-radius: 8px; font-size: 14px; }
+.session-row-text { flex: 1; min-width: 0; }
+.session-row-name { font-size: 14px; font-weight: 580; }
+.session-row-origin { font-family: var(--mono); font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.badge {
+  background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 650;
+  border-radius: 999px; padding: 3px 8px; white-space: nowrap;
+}
+
+.relay-strip {
+  margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--muted);
+}
+.relay-line { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-family: var(--mono); font-size: 11.5px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+/* The socket is open but the relay refuses our events, which the dot cannot show, so
+   the name does. */
+.relay-line.relay-refused {
+  color: var(--danger); text-decoration: underline dotted; cursor: pointer;
+}
+.relay-said {
+  margin: 2px 0 6px 15px; font-family: var(--font); font-size: 11px;
+  line-height: 1.45; color: var(--danger); overflow-wrap: anywhere;
+}
+.dot.open { background: var(--ok); }
+.dot.connecting { background: var(--warn); }
+.dot.closed { background: var(--danger); }
+
+.notice {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 14px;
+}
+.notice h3 { margin: 0 0 7px; font-size: 15px; font-weight: 620; }
+.notice p { margin: 0 0 12px; font-size: 13.5px; color: var(--muted); }
+.notice p:last-child { margin-bottom: 0; }
+
+.deep-links + .or-rule { margin-top: 15px; }
+
+.url-row {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--surface-alt); border: 1px solid var(--border);
+  border-radius: 10px; padding: 9px 9px 9px 12px;
+}
+.url-text {
+  flex: 1; min-width: 0; font-family: var(--mono); font-size: 12.5px;
+  line-height: 1.45; color: var(--text);
+  background: none; border: 0; padding: 0; outline: none;
+  /* One scrolling line, not a wrapped block: a caret in reflowing text is hard to place
+     on a phone. */
+  text-overflow: ellipsis;
+}
+.url-text:focus { color: var(--text); }
+.url-copy { flex: none; min-height: 34px; padding: 7px 12px; font-size: 12.5px; }
+
+/* Three across so six wallets are two tidy rows; a fixed count, as auto-fit would
+   split rows unevenly on wider phones. */
+.deep-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.deep-links a {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  text-align: center; text-decoration: none; color: var(--text);
+  background: var(--surface-alt); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 5px; font-weight: 550; font-size: 11px;
+  line-height: 1.25;
+}
+.deep-links img { width: 28px; height: 28px; border-radius: 7px; }
+
+.error-text { color: var(--danger); font-size: 13px; margin-top: 8px; }
+.spinner {
+  width: 15px; height: 15px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: inline-block; vertical-align: -2px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Relay settings ---- */
+
+/* Scoped, so the other sheets keep their sizing: this one grows with the relay list. */
+.sheet-scroll { max-height: calc(100vh - 100px); overflow-y: auto; }
+
+.sheet-note {
+  font-size: 12.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.5;
+}
+.relay-edit-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+}
+.relay-remove {
+  width: auto; margin: 0; min-height: 0; padding: 4px 3px;
+  border: none; background: none; color: var(--muted);
+  font-size: 11.5px; line-height: 1; cursor: pointer;
+}
+.relay-remove:hover:not(:disabled) { color: var(--danger); }
+.relay-remove:disabled { opacity: 0.35; cursor: default; }
+
+.relay-edit-url {
+  flex: 1; min-width: 0; font-family: var(--mono); font-size: 11.5px;
+  color: var(--text); overflow-wrap: anywhere;
+}
+.relay-inuse { margin-bottom: 4px; }
+.relay-inuse .relay-edit-url { padding: 3px 0; display: block; }
+
+.field-action-row { display: flex; gap: 6px; margin: 0 0 8px; }
+.field-action-row > input { flex: 1; min-width: 0; margin: 0; }
+.field-action-row > button {
+  margin: 0; min-height: 0; padding: 9px 14px; white-space: nowrap; flex: none;
+}
+
+.relay-add-row { margin-top: 12px; }
+.relay-add-field {
+  font-family: var(--mono); font-size: 11.5px; padding: 9px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-alt); color: var(--text);
+}
+
+/* ---- User agreement. Shipped inside the build; see terms.ts. ---- */
+/* Outside #app, which centres with auto margins, hence margin-top: 0. */
+.page-foot {
+  width: 100%; max-width: 520px; box-sizing: border-box;
+  margin: 0 auto 24px; padding: 0 16px;
+}
+.page-foot p {
+  margin: 0; text-align: center;
+  font-size: 11px; line-height: 1.6; color: var(--muted); text-wrap: pretty;
+}
+/* A button, as it opens a sheet; dressed as a link. */
+.terms-link {
+  border: none; background: none; padding: 0; min-height: 0;
+  font: inherit; color: var(--muted);
+  text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+.terms-link:hover { color: var(--text); }
+.terms-body {
+  font-size: 12.5px; line-height: 1.55; color: var(--muted); margin: 0 0 10px;
+}
+.terms-body:last-child { margin-bottom: 0; }

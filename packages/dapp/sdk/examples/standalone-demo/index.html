@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Verum Connect — demo dapp</title>
+    <style>
+      /* Values match the hub's styles.css. The two screens are held side by side
+         to compare the session code, so a palette that drifts between them makes
+         the comparison harder than it needs to be. */
+      :root {
+        --bg: #f6f6f4; --surface: #fff; --border: #dedbd4;
+        --text: #1a1917; --muted: #6b6862; --accent: #b5451b;
+        --ok: #2f7d4f; --warn: #9a6a12; --danger: #a32b1c; --on-accent: #fff;
+        --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      /* Guarded on the attribute's absence, not a list of themes to exclude, so
+         adding a theme never means remembering to add it here. */
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+          --bg: #16150f; --surface: #1f1e18; --border: #35332b;
+          --text: #f2f0e9; --muted: #9c988d; --accent: #e8703f;
+          --ok: #63b587; --warn: #d3a44b; --danger: #e0705c;
+        }
+      }
+      /* Repeated, not shared: an explicit dark choice has to win on a light
+         system too, where the media query never matches. */
+      :root[data-theme="dark"] {
+        --bg: #16150f; --surface: #1f1e18; --border: #35332b;
+        --text: #f2f0e9; --muted: #9c988d; --accent: #e8703f;
+        --ok: #63b587; --warn: #d3a44b; --danger: #e0705c;
+      }
+      /* Nyan: the deep-space blue and saturated rainbow of the 2011 GIF. Dark by
+         construction. */
+      :root[data-theme="rainbow"] {
+        --bg: #002d59; --surface: #033a6d; --border: #1b5c96;
+        --text: #eef5ff; --muted: #a8c6e4; --accent: #ff6bb3;
+        --ok: #5cf07a; --warn: #ffd633; --danger: #ff7d93;
+        /* White on this pink is 2.6:1; navy ink is 6.3:1. */
+        --on-accent: #0a1f3d;
+        --rainbow: linear-gradient(90deg, #ff0000, #ff9900, #ffff00, #33ff00, #0099ff, #6633ff);
+      }
+      /* Scrollbars and UA-drawn controls read this, not the tokens. */
+      :root[data-theme="dark"] { color-scheme: dark; }
+      :root[data-theme="light"] { color-scheme: light; }
+      :root[data-theme="rainbow"] { color-scheme: dark; }
+
+      /* Star field as one repeating tile: nothing in the DOM to lay out around. */
+      :root[data-theme="rainbow"] body {
+        background-image:
+          radial-gradient(1px 1px at 11% 17%, #fff, transparent),
+          radial-gradient(1px 1px at 74% 8%, #fff, transparent),
+          radial-gradient(1px 1px at 42% 61%, #fff, transparent),
+          radial-gradient(1px 1px at 88% 47%, #fff, transparent),
+          radial-gradient(1px 1px at 23% 84%, #fff, transparent),
+          radial-gradient(1px 1px at 61% 33%, #fff, transparent);
+        background-size: 320px 320px;
+      }
+      /* The trail, as a strip across the top of each card. */
+      :root[data-theme="rainbow"] .card {
+        background-image: var(--rainbow);
+        background-repeat: no-repeat;
+        background-size: 100% 3px;
+        background-position: top left;
+      }
+      /* The Ethereum diamond launching straight up on a rainbow flame.
+         Two pseudo-elements only: vehicle and burning engine are one object, so
+         both move together. Straight up means no rotation anywhere, which keeps
+         the logo level. They stay joined by construction — flame's top edge at
+         the diamond's bottom edge, both centred on --rocket-x, both running the
+         same keyframes — so they cannot drift apart or sit side by side.
+         position: fixed keeps them out of the body grid; z-index: -1 puts them
+         under the cards; transform-only so they composite. */
+      :root[data-theme="rainbow"] {
+        --rocket-x: 13vw; --rocket-size: 26px;
+        --rocket-base: -70px; --flame-height: 66px;
+      }
+      /* Three concerns in three properties, each retunable alone:
+           background  hard-edged bands, not a blend — a smooth gradient muddies
+                       to brown where red meets green.
+           clip-path   a cone NARROW at the nozzle that flares as it falls away,
+                       the way a real exhaust does. Wide-at-top is a candle.
+           mask-image  dissolves the bottom third so the cone has no hard cut.
+         drop-shadow runs after all three, so the glow follows the real outline
+         rather than the bounding box. */
+      :root[data-theme="rainbow"] body::after {
+        content: "";
+        position: fixed;
+        left: var(--rocket-x); margin-left: -18px;
+        bottom: calc(var(--rocket-base) - var(--flame-height));
+        width: 36px; height: var(--flame-height);
+        background: linear-gradient(180deg,
+          #ffffff 0%, #ffffff 7%,
+          #ff0000 7%, #ff0000 22%,
+          #ff9900 22%, #ff9900 37%,
+          #ffff00 37%, #ffff00 52%,
+          #33ff00 52%, #33ff00 67%,
+          #0099ff 67%, #0099ff 82%,
+          #6633ff 82%, #6633ff 100%);
+        -webkit-clip-path: polygon(36% 0%, 64% 0%, 100% 100%, 0% 100%);
+        clip-path: polygon(36% 0%, 64% 0%, 100% 100%, 0% 100%);
+        -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0,0,0,0) 100%);
+        mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0,0,0,0) 100%);
+        pointer-events: none; z-index: -1; opacity: 0;
+        animation: launch 18s linear infinite, burn 1.4s ease-in-out infinite,
+                   wander 108s steps(1, end) infinite;
+        /* One delay per animation, in order. Only `wander` is seeded. */
+        animation-delay: 0s, 0s, var(--sky-seed, 0s);
+      }
+      :root[data-theme="rainbow"] body::before {
+        content: "";
+        position: fixed;
+        left: var(--rocket-x); margin-left: calc(var(--rocket-size) / -2);
+        bottom: var(--rocket-base);
+        width: var(--rocket-size); height: var(--rocket-size);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 417'%3E%3Cpath fill='%23fff' fill-opacity='.55' d='M127.96 0l-2.8 9.5v275.67l2.8 2.79 127.96-75.64z'/%3E%3Cpath fill='%23fff' d='M127.96 0L0 212.32l127.96 75.64V154.16z'/%3E%3Cpath fill='%23fff' fill-opacity='.55' d='M127.96 312.19l-1.58 1.92v98.2l1.58 4.6L256 236.59z'/%3E%3Cpath fill='%23fff' d='M127.96 416.91v-104.72L0 236.59z'/%3E%3Cpath fill='%23fff' fill-opacity='.3' d='M127.96 287.96l127.96-75.64-127.96-58.16z'/%3E%3Cpath fill='%23fff' fill-opacity='.55' d='M0 212.32l127.96 75.64v-133.8z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: center; background-size: contain;
+        pointer-events: none; z-index: -1; opacity: 0;
+        animation: launch 18s linear infinite, wander 108s steps(1, end) infinite;
+        animation-delay: 0s, var(--sky-seed, 0s);
+      }
+      /* One viewport plus the flame, so nothing is on screen at restart. */
+      @keyframes launch {
+        0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+        8%   { opacity: 0.9; }
+        86%  { opacity: 0.9; }
+        100% { transform: translate3d(0, calc(-100vh - 300px), 0); opacity: 0; }
+      }
+      /* Which lane it launches from. CSS has no random(), so this is six
+         scattered positions on a cycle six times the flight. steps(1, end)
+         holds each for its whole segment rather than sliding, so `left` is
+         recalculated six times per 108s instead of every frame; and the period
+         is an exact multiple of the flight, so every jump lands on a launch
+         boundary where opacity is already 0 and can never be seen. Kept off
+         `transform`, which `launch` already owns. */
+      @keyframes wander {
+        0%     { left: 11vw; }
+        16.66% { left: 68vw; }
+        33.33% { left: 29vw; }
+        50%    { left: 84vw; }
+        66.66% { left: 47vw; }
+        83.33% { left: 7vw; }
+      }
+      /* Separate animation because `launch` owns transform and opacity; sharing
+         a property between two animations lets one silently win. */
+      @keyframes burn {
+        0%, 100% { filter: drop-shadow(0 0 7px rgba(255,170,60,.7)) brightness(1); }
+        50%      { filter: drop-shadow(0 0 11px rgba(255,120,40,.85)) brightness(1.18); }
+      }
+      /* Motion is decoration here, so it is the first thing to go. */
+      @media (prefers-reduced-motion: reduce) {
+        :root[data-theme="rainbow"] body::after,
+        :root[data-theme="rainbow"] body::before { animation: none; opacity: 0; }
+      }
+      /* Guarded: without background-clip, transparent would erase the word. */
+      @supports (-webkit-background-clip: text) or (background-clip: text) {
+        :root[data-theme="rainbow"] h1 span {
+          background: var(--rainbow);
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; background: var(--bg); color: var(--text);
+        font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        display: grid; place-items: center; min-height: 100vh; padding: 24px;
+      }
+      main { width: 100%; max-width: 440px; }
+      /* The theme control belongs to the page, so it sits beside the title
+         rather than inside a card that only exists in some states. */
+      .app-head {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; margin-bottom: 20px;
+      }
+      .app-head h1 { margin: 0; }
+      .theme-toggle {
+        font: inherit; font-size: 14px; line-height: 1; width: auto; margin: 0;
+        min-height: 0; padding: 7px 10px; border-radius: 999px;
+        color: var(--muted); background: var(--surface); border: 1px solid var(--border);
+      }
+      .theme-toggle:hover { color: var(--text); }
+      h1 { font-size: 19px; margin: 0 0 4px; letter-spacing: -0.015em; }
+      h1 span { color: var(--accent); }
+      .sub { color: var(--muted); font-size: 13.5px; margin: 0 0 20px; }
+      .card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 14px; padding: 20px; margin-bottom: 14px;
+      }
+      /* Stays light in both themes on purpose: an inverted QR is readable by
+         some scanners and not others, and the scanner here is whatever the
+         wallet ships. The white plate and padding make that look deliberate on
+         a dark page, and widen the quiet zone the code needs anyway. */
+      canvas {
+        width: 100%; max-width: 260px; height: auto; display: block;
+        margin: 0 auto 18px; border-radius: 10px;
+        background: #fff; padding: 10px;
+      }
+      .code {
+        text-align: center; font-family: var(--mono); font-weight: 600;
+        font-size: 14px; background: color-mix(in srgb, var(--accent) 10%, transparent);
+        border-radius: 9px; padding: 10px; margin-bottom: 6px;
+      }
+      .code-hint { text-align: center; font-size: 12px; color: var(--muted); margin: 0; }
+      /* Mirrors the hub's own code row, so the two things being compared look
+         alike on both screens instead of asking the user to match a phrase
+         across two different presentations. */
+      .code-row {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; background: color-mix(in srgb, var(--accent) 10%, transparent);
+        border-radius: 10px; padding: 11px 13px; margin-bottom: 14px;
+        flex-wrap: wrap; text-align: left;
+      }
+      .code-label { font-size: 12px; color: var(--muted); }
+      .code-words {
+        font-family: var(--mono); font-size: 14px; font-weight: 600; letter-spacing: 0.01em;
+      }
+      /* Header of the pairing card: title left, settings gear right. Mirrors the
+         shape of a wallet-selector modal, which is what this becomes when a
+         connector like RainbowKit opens it. */
+      .card-head {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; margin-bottom: 14px;
+      }
+      .card-head h2 { font-size: 15px; margin: 0; font-weight: 600; }
+      .icon-button {
+        width: auto; margin: 0; min-height: 0; padding: 6px 8px; font-size: 20px;
+        line-height: 1; border: none; background: none; color: var(--muted);
+      }
+      .icon-button:hover { color: var(--text); }
+      .backdrop {
+        position: fixed; inset: 0; background: rgb(0 0 0 / 0.42); z-index: 50;
+        display: flex; align-items: flex-start; justify-content: center; padding: 16px;
+      }
+      .sheet {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+        padding: 18px; width: 100%; max-width: 420px; margin-top: 48px;
+        max-height: calc(100vh - 96px); overflow-y: auto;
+        box-shadow: 0 16px 48px -16px rgb(0 0 0 / 0.4); text-align: left;
+      }
+      .sheet-head {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 10px; margin-bottom: 6px;
+      }
+      .sheet-head h2 { font-size: 15px; margin: 0; }
+      .sheet-note { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.5; }
+      /* Each candidate as a row of its own, in the same face and tracking the
+         wallet shows it in, so the comparison is character-for-character. */
+      .connect-choice {
+        font-family: var(--mono); font-size: 15px; letter-spacing: 1px;
+        text-align: center; margin-bottom: 8px;
+      }
+      /* Shared so the way out lights up exactly as a choice does — it is one of
+         the options, not a lesser control beneath them. */
+      .connect-choice:hover, .sheet-dismiss:hover {
+        border-color: var(--accent); color: var(--accent);
+      }
+      .setting-label {
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--muted); font-weight: 600; margin: 16px 0 8px;
+      }
+      button {
+        font: inherit; font-weight: 550; cursor: pointer; width: 100%;
+        border-radius: 10px; padding: 11px; border: 1px solid var(--border);
+        background: var(--surface); color: var(--text); margin-bottom: 8px; min-height: 44px;
+      }
+      button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+      button:disabled { opacity: 0.45; cursor: default; }
+      .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; padding: 5px 0; }
+      .row span:last-child { font-family: var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      pre {
+        background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+        padding: 11px; font-size: 11.5px; overflow-x: auto; margin: 0; max-height: 190px;
+        font-family: var(--mono); white-space: pre-wrap; word-break: break-all;
+      }
+      .log-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; font-size: 13.5px; font-weight: 600; }
+      button.log-clear { width: auto; min-height: 32px; margin: 0; padding: 5px 9px; font-size: 12px; font-weight: 550; }
+      .uri-field {
+        width: 100%; font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+        background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+        padding: 9px; margin-bottom: 8px; text-overflow: ellipsis;
+      }
+      /* Copy sits INSIDE the field because it acts on the text in it. Regenerate
+         sits OUTSIDE because it replaces the field's whole value — inside, next
+         to copy, the two read as variations of one action. Neither is a
+         full-width button: on this screen the action is scanning the QR. */
+      .field-row { display: flex; align-items: stretch; gap: 6px; margin-bottom: 8px; }
+      .field-wrap { position: relative; flex: 1; min-width: 0; }
+      .field-wrap .uri-field { margin-bottom: 0; padding-right: 34px; }
+      .field-action {
+        display: grid; place-items: center;
+        margin: 0; min-height: 0; padding: 0; font-size: 0;
+        color: var(--muted); border-radius: 6px;
+      }
+      .field-action svg { width: 15px; height: 15px; display: block; }
+      /* Inside: no chrome of its own, so the field still reads as one control. */
+      .field-inside {
+        position: absolute; top: 0; right: 0; height: 100%; width: 30px;
+        border: none; background: none;
+      }
+      .field-inside:hover { color: var(--text); }
+      /* Outside: its own edges, or it floats unanchored beside the field. */
+      .field-outside {
+        width: 34px; border: 1px solid var(--border); background: var(--surface);
+        border-radius: 9px;
+      }
+      .field-outside:hover { color: var(--text); border-color: var(--muted); }
+      .copy-hint { font-size: 11.5px; color: var(--muted); margin: 0 0 8px; }
+
+      /* Matches the hub's divider, since the two screens sit side by side.
+         Generous above and below: it separates two ways of doing the same
+         thing, so it needs to read as a break rather than a caption on either
+         of them. */
+      .or-rule {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 11.5px; color: var(--muted); margin: 22px 0 16px;
+      }
+      .or-rule::before, .or-rule::after {
+        content: ""; flex: 1; height: 1px; background: var(--border);
+      }
+
+      /* The connect code, sized to be read off one screen and typed into
+         another — the reason it is larger and wider-tracked than anything else
+         on the card, and why it gets room rather than being packed in. */
+      .connect-code-row {
+        display: flex; align-items: stretch; gap: 6px; margin-bottom: 4px;
+        position: relative;
+      }
+      /* Faded rather than removed: seeing which code went stale is the point,
+         and an emptied field reads as a bug. */
+      .connect-code.is-stale { opacity: 0.3; }
+      .connect-code.has-boxes { padding: 0; border: 0; background: none; }
+      .code-reload {
+        position: absolute; inset: 0; margin: 0; min-height: 0;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        background: none; border: none; border-radius: 9px;
+        font-size: 13px; color: var(--muted);
+      }
+      .code-reload:hover { color: var(--text); }
+      .code-reload svg { width: 15px; height: 15px; }
+      .connect-code {
+        flex: 1; min-width: 0; line-height: 23px;
+        background: var(--bg); border: 1px solid var(--border);
+        border-radius: 9px; padding: 15px 8px;
+        text-align: center; color: var(--text);
+        font-family: var(--mono); font-size: 16px; letter-spacing: 1px;
+      }
+      /* The spinner goes INSIDE that box, so the card holds its height when the
+         code arrives — nothing is swapped but the box's contents. Indeterminate
+         because the wait is on relays acknowledging a publish, and there is no
+         progress to report until they do. */
+      .code-spinner {
+        display: inline-block; width: 17px; height: 17px; vertical-align: -3px;
+        border: 2px solid var(--border); border-top-color: var(--muted);
+        border-radius: 50%; animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      /* Slowed rather than stopped: a still ring reads as a broken control. */
+      @media (prefers-reduced-motion: reduce) {
+        .code-spinner { animation-duration: 2.4s; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="app-head">
+        <h1>Verum <span>Connect</span></h1>
+        <button id="theme" class="theme-toggle" type="button"></button>
+      </div>
+      <div id="app"></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

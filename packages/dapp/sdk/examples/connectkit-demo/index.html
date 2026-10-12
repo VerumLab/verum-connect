@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verum Connect — ConnectKit demo</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --page-bg: #ffffff;
+        --page-fg: #1a1a1a;
+        --page-muted: #666666;
+        --page-border: #ececec;
+        --page-panel: #fafafa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page-bg: #0d1117;
+          --page-fg: #e6edf3;
+          --page-muted: #8b949e;
+          --page-border: #21262d;
+          --page-panel: #161b22;
+        }
+      }
+      body { margin: 0; background: var(--page-bg); color: var(--page-fg); font-family: sans-serif; }
+      header {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap; padding: 14px 24px;
+        border-bottom: 1px solid var(--page-border);
+      }
+      main { max-width: 480px; margin: 64px auto; padding: 0 24px; }
+      h1 { font-size: 18px; margin: 0 0 4px; }
+      p.lead { color: var(--page-muted); font-size: 14px; margin: 0 0 28px; }
+      button {
+        font: inherit; font-weight: 600; font-size: 14px; padding: 10px 14px;
+        border-radius: 10px; border: 1px solid var(--page-border);
+        background: var(--page-panel); color: var(--page-fg); cursor: pointer;
+      }
+      .chip {
+        display: flex; align-items: center; gap: 6px; padding: 8px 10px;
+        border-radius: 10px; border: 1px solid var(--page-border);
+        background: var(--page-panel); font-size: 14px; font-weight: 700; line-height: 1;
+      }
+      .chip span.label { opacity: 0.6; font-weight: 500; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

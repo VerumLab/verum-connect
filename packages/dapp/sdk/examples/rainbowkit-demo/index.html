@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verum Connect — RainbowKit demo</title>
+    <style>
+      /* The page's own chrome, following the OS. Dark values are the extension's palette, so a dapp carrying the
+         Verum mark sits on the ground that mark is drawn for. */
+      :root {
+        color-scheme: light dark;
+        --page-bg: #ffffff;
+        --page-fg: #1a1a1a;
+        --page-muted: #666666;
+        --page-border: #ececec;
+        --page-panel: #fafafa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page-bg: #0d1117;
+          --page-fg: #e6edf3;
+          --page-muted: #8b949e;
+          --page-border: #21262d;
+          --page-panel: #161b22;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--page-bg);
+        color: var(--page-fg);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

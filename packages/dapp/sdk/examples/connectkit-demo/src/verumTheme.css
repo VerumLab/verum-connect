@@ -1,0 +1,7 @@
+/* The Verum widgets sit in this page's header, outside ConnectKit's own wrapper, so they
+   take the page's palette. */
+:where(.verum-relays, .verum-session-code) {
+  --verum-surface: var(--page-panel);
+  --verum-fg: var(--page-fg);
+  --verum-border: var(--page-border);
+}

@@ -1,0 +1,36 @@
+{
+  "name": "@verumlab/connect-react",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@verumlab/connect-dapp": "0.1.0",
+    "@verumlab/connect-wagmi": "0.1.0",
+    "@verumlab/connect-ui": "0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "wagmi": ">=2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "react": "^18.3.1",
+    "typescript": "^5.6.0",
+    "wagmi": "^2.19.0"
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+
+packages/wallet/hub/deploy/
+packages/dapp/sdk/examples/standalone-demo/deploy/
+packages/dapp/bookmarklet/deploy/
+
+# Not published yet
+docs/

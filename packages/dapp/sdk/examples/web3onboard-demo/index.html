@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verum Connect — web3-onboard demo</title>
+    <style>
+      /* @verumlab/connect-ui ships no styles: the classes are its whole surface,
+         so a dapp dresses them to match itself rather than fighting inline CSS. */
+
+      .verum-gateways { display: flex; gap: 8px; margin-bottom: 10px; }
+      .verum-gateway { flex: 1; min-width: 0; }
+      .verum-gateway-label { font-size: 11px; color: var(--page-muted); margin-bottom: 4px; }
+      .verum-gateway select {
+        width: 100%; font: inherit; font-size: 12px; padding: 6px 4px;
+        border-radius: 8px; border: 1px solid var(--page-border);
+        background: var(--page-bg); color: var(--page-fg);
+      }
+      .verum-network { display: inline-flex; margin-bottom: 12px; }
+      .verum-network button {
+        margin: 0; padding: 5px 0; min-width: 84px; min-height: 0; text-align: center;
+        font-size: 12px; font-weight: 600; cursor: pointer; position: relative;
+        border: 1px solid var(--page-border); background: var(--page-bg); color: var(--page-fg);
+      }
+      .verum-network button:first-child { border-radius: 8px 0 0 8px; }
+      .verum-network button:last-child { border-radius: 0 8px 8px 0; margin-left: -1px; }
+      .verum-network button.is-on {
+        z-index: 1; border-color: #3b82f6; background: #3b82f6; color: #fff;
+      }
+      .verum-relays { position: relative; }
+      .verum-relays-toggle {
+        display: flex; align-items: center; justify-content: center;
+        width: 36px; height: 36px; padding: 0; cursor: pointer;
+      }
+      .verum-relays-panel {
+        position: absolute; top: calc(100% + 8px); right: 0; z-index: 20;
+        width: 300px; padding: 14px; border-radius: 12px;
+        background: var(--page-panel); color: var(--page-fg);
+        border: 1px solid var(--page-border);
+        box-shadow: 0 8px 32px rgba(0,0,0,.24); font-size: 13px; text-align: left;
+      }
+      .verum-relays-title { font-weight: 700; margin-bottom: 10px; }
+      .verum-relays-note { margin: -4px 0 10px; font-size: 12px; color: var(--page-muted); line-height: 1.45; }
+      .verum-relays-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; min-width: 0; }
+      .verum-relays-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #c1443c; }
+      .verum-relays-dot.is-open { background: #1a9e6c; }
+      .verum-relays-dot.is-connecting { background: #c98a00; }
+      /* Red whatever the socket says: this relay rejects our events. */
+      .verum-relays-dot.is-refused { background: #c1443c; }
+      /* What the relay did with the parked connect code. Orange rather than red
+         for a relay that kept nothing — it still carries QR and URL sessions,
+         which are ephemeral and stored nowhere. */
+      .verum-relays-code { flex: none; font-size: 10px; cursor: help; }
+      .verum-relays-code.is-kept { color: #1a9e6c; }
+      .verum-relays-code.is-missing { color: #c98a00; }
+      .verum-relays-code.is-unknown { color: var(--page-muted); }
+      /* A refusing relay: red, and its name opens what it said. */
+      .verum-relays-url.is-refused {
+        color: #c1443c; cursor: pointer; text-decoration: underline dotted;
+      }
+      .verum-relays-said {
+        margin: 0 0 6px 15px; font-size: 11px; line-height: 1.45; color: #c1443c;
+        overflow-wrap: anywhere;
+      }
+      .verum-relays-url {
+        flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+      }
+      .verum-relays-remove {
+        flex: none; border: none; background: none; font-size: 14px; line-height: 1;
+        padding: 2px 4px; cursor: pointer; color: var(--page-muted);
+      }
+      .verum-relays-remove:disabled { opacity: .3; cursor: not-allowed; }
+      .verum-relays-error { margin: 8px 0 0; font-size: 12px; color: #c1443c; }
+      .verum-relays-actions { display: flex; gap: 8px; margin-top: 12px; }
+      .verum-relays-actions button { flex: 1; font-size: 12.5px; padding: 7px 10px; }
+      .verum-session-code {
+        display: flex; align-items: center; gap: 6px; padding: 8px 10px;
+        border-radius: 10px; background: var(--page-panel); color: var(--page-fg);
+        border: 1px solid var(--page-border); font-weight: 700; font-size: 14px;
+      }
+      .verum-session-code-label { color: var(--page-muted); font-weight: 500; }
+      [hidden] { display: none !important; }
+
+      :root {
+        color-scheme: light dark;
+        --page-bg: #ffffff;
+        --page-fg: #1a1a1a;
+        --page-muted: #666666;
+        --page-border: #ececec;
+        --page-panel: #fafafa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page-bg: #0d1117;
+          --page-fg: #e6edf3;
+          --page-muted: #8b949e;
+          --page-border: #21262d;
+          --page-panel: #161b22;
+        }
+      }
+      body { margin: 0; background: var(--page-bg); color: var(--page-fg); font-family: sans-serif; }
+      header {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap; padding: 14px 24px;
+        border-bottom: 1px solid var(--page-border);
+      }
+      main { max-width: 480px; margin: 64px auto; padding: 0 24px; }
+      h1 { font-size: 18px; margin: 0 0 4px; }
+      p.lead { color: var(--page-muted); font-size: 14px; margin: 0 0 28px; }
+      button {
+        font: inherit; font-weight: 600; font-size: 14px; padding: 10px 14px;
+        border-radius: 10px; border: 1px solid var(--page-border);
+        background: var(--page-panel); color: var(--page-fg); cursor: pointer;
+      }
+      .chip {
+        display: flex; align-items: center; gap: 6px; padding: 8px 10px;
+        border-radius: 10px; border: 1px solid var(--page-border);
+        background: var(--page-panel); font-size: 14px; font-weight: 700; line-height: 1;
+      }
+      .chip span.label { opacity: 0.6; font-weight: 500; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong style="font-size: 15px">Verum Connect</strong>
+      <div id="cluster" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap"></div>
+    </header>
+    <main>
+      <h1>web3-onboard example</h1>
+      <p class="lead">
+        Web3-onboard with Verum Connect included.
+      </p>
+      <div id="body"></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

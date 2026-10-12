@@ -1,0 +1,16 @@
+/* The Verum widgets follow RainbowKit's theme and accent. RainbowKit defines its
+   variables on its own wrapper, which the page root does not inherit from, so these are
+   set on the widgets themselves. */
+:where(.verum-relays, .verum-session-code) {
+  --verum-surface: var(--rk-colors-connectButtonBackground);
+  --verum-panel: var(--rk-colors-menuItemBackground);
+  --verum-fg: var(--rk-colors-connectButtonText);
+  --verum-panel-fg: var(--rk-colors-modalText);
+  --verum-border: var(--rk-colors-generalBorder);
+  --verum-shadow: var(--rk-shadows-connectButton);
+  --verum-accent: var(--rk-colors-accentColor);
+  --verum-accent-fg: var(--rk-colors-accentColorForeground);
+  --verum-radius: var(--rk-radii-connectButton);
+  --verum-panel-radius: var(--rk-radii-menu);
+  --verum-font: var(--rk-fonts-body);
+}

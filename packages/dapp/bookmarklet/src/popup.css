@@ -1,0 +1,237 @@
+/* Close to the hub's palette: the two are compared side by side. */
+:root {
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --border: #dedbd4;
+  --text: #1a1917;
+  --muted: #6b6862;
+  --accent: #b5451b;
+  --accent-soft: #fbeee7;
+  --ok: #2f7d4f;
+  --warn: #9a6a12;
+  --danger: #a32b1c;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150f;
+    --surface: #1f1e18;
+    --border: #35332b;
+    --text: #f2f0e9;
+    --muted: #9c988d;
+    --accent: #e8703f;
+    --accent-soft: #2c1d15;
+    --ok: #63b587;
+    --warn: #d3a44b;
+    --danger: #e0705c;
+  }
+}
+
+/* Padding inside the width, or #app is 412px on a 390px phone. */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* 440px and 16px gutter, as the hub's #app, so the two cards compare. */
+#app {
+  width: 100%; max-width: 440px; margin: auto;
+  padding: 20px max(16px, env(safe-area-inset-right)) 20px max(16px, env(safe-area-inset-left));
+}
+
+/* The wordmark, pinned to the corner like the hub's. */
+.page-head {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; padding-top: calc(14px + env(safe-area-inset-top));
+  background: var(--bg);
+}
+.page-head h1 { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; margin: 0; }
+.page-head h1 span { color: var(--accent); }
+.page-head h1 em { font-style: normal; font-weight: 500; color: var(--muted); }
+.page-head h1 em::before { content: " · "; }
+.page-head button { font-size: 12px; padding: 7px 11px; }
+.page-head .danger { color: #a32b1c; }
+@media (prefers-color-scheme: dark) { .page-head .danger { color: #e8703f; } }
+#app { padding-top: 64px; }
+
+.card {
+  position: relative;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px;
+}
+.card h1 { padding-right: 34px; }
+
+/* In the card's corner, opening its own settings. */
+.gear {
+  position: absolute; top: 12px; right: 12px;
+  display: flex; padding: 6px; border: 0; background: none; color: var(--muted);
+}
+.gear:hover { color: var(--text); }
+.gear.is-on { color: var(--accent); }
+
+h1 { font-size: 16px; margin: 0 0 4px; }
+p { margin: 0 0 12px; font-size: 13px; }
+.muted { color: var(--muted); }
+
+/* The attested origin: the one line the page could not have chosen. */
+.origin {
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
+  overflow-wrap: anywhere; margin-bottom: 14px;
+}
+
+/* White behind it whatever the theme: an inverted QR is unreliable to scan. */
+.qr { width: 100%; border-radius: 8px; background: #fff; display: block; }
+
+.link-row { display: flex; gap: 6px; margin-top: 12px; }
+.link-row input {
+  flex: 1; min-width: 0; font-family: var(--mono); font-size: 11px;
+  padding: 8px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text);
+}
+button {
+  font: inherit; font-size: 13px; font-weight: 600; padding: 8px 12px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); cursor: pointer;
+}
+
+.rule {
+  display: flex; align-items: center; gap: 10px;
+  margin: 18px 0 12px; font-size: 11.5px; color: var(--muted);
+}
+.rule::before, .rule::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* One box whose contents change, so the card holds its height. */
+.code {
+  padding: 15px 8px; border-radius: 9px; text-align: center;
+  border: 1px solid var(--border); background: var(--bg);
+  font-family: var(--mono); font-size: 16px; letter-spacing: 1px;
+}
+.code.code-shown { padding: 0; border: 0; background: none; }
+.code-note { font-family: var(--font); font-size: 13px; letter-spacing: 0; color: var(--muted); }
+
+/* Lifted from the hub so the two compare. */
+.code-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; background: var(--accent-soft); border-radius: 10px;
+  padding: 11px 13px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.code-label { font-size: 12px; color: var(--muted); }
+.code-words { font-family: var(--mono); font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
+
+/* The relay set, by name: a code is found by searching relays, and two lists that do
+   not overlap look like a wrong code. */
+.hub-link { margin-top: 16px; font-size: 11.5px; color: var(--muted); }
+.verum-gateways { display: flex; gap: 8px; margin-bottom: 10px; }
+.verum-gateway { flex: 1; min-width: 0; }
+.verum-gateway-label { margin-bottom: 4px; }
+.verum-gateway select {
+  width: 100%; padding: 7px 8px; font: inherit; font-size: 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+}
+.verum-network { display: inline-flex; }
+.verum-network button { padding: 6px 12px; font-size: 12px; border-radius: 0; }
+.verum-network button:first-child { border-radius: 8px 0 0 8px; }
+.verum-network button:last-child { border-radius: 0 8px 8px 0; margin-left: -1px; }
+/* Above its neighbour: the second button is pulled 1px over the first to share
+   an edge, which otherwise paints the selected one's right border grey. */
+.verum-network button.is-on { z-index: 1; background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+.install-note { margin: 16px 0 0; font-size: 11.5px; color: var(--muted); }
+.install-note a { color: inherit; text-decoration: underline; }
+
+.relays { margin-top: 16px; font-size: 11.5px; color: var(--muted); }
+.relay-list { display: flex; flex-direction: column; gap: 4px; }
+.relay { display: flex; align-items: center; gap: 7px; }
+.relay-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--muted); }
+.relay-dot.open { background: var(--ok); }
+.relay-dot.connecting { background: var(--warn); }
+.relay-dot.closed { background: var(--muted); }
+/* A relay that refuses our events, however open its socket is. */
+.relay-dot.refused { background: var(--danger); }
+.relay-name {
+  flex: 1; min-width: 0; font-family: var(--mono); font-size: 11px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text);
+}
+.relay-drop {
+  flex: none; padding: 2px 6px; font-size: 11px; font-weight: 400; line-height: 1;
+  border-radius: 6px; color: var(--muted);
+}
+.relay-drop:disabled { opacity: 0.3; cursor: default; }
+.relay-add { display: flex; gap: 6px; margin-top: 8px; }
+.relay-add input {
+  flex: 1; min-width: 0; font-family: var(--mono); font-size: 11px; padding: 7px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text);
+}
+.relay-add button { padding: 7px 10px; font-size: 12px; }
+.relay-problem:not(:empty) { margin-top: 6px; color: #c2410c; }
+.relay-reset {
+  margin-top: 8px; padding: 0; border: 0; background: none;
+  color: var(--muted); font-size: 11.5px; text-decoration: underline; cursor: pointer;
+}
+
+body { flex-direction: column; }
+.page-foot { width: 100%; max-width: 520px; box-sizing: border-box; margin: 0 auto 20px; padding: 0 16px; }
+.page-foot p { margin: 0; text-align: center; font-size: 11px; line-height: 1.6; color: var(--muted); text-wrap: pretty; }
+.terms-link {
+  font: inherit; padding: 0; border: 0; background: none;
+  color: inherit; text-decoration: underline; cursor: pointer;
+}
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center;
+  justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.45);
+}
+.sheet {
+  width: 100%; max-width: 440px; max-height: calc(100dvh - 90px); overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px;
+}
+.sheet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.sheet-head h3 { font-size: 15px; margin: 0 0 4px; }
+.sheet-close { border: 0; background: none; color: var(--muted); padding: 0; }
+.terms-body { font-size: 12.5px; color: var(--muted); }
+
+/* Under the connect code: which relays hold it, for comparing with the hub's set. */
+
+/* A relay that answered a publish with a refusal: the dot stays green (the socket is
+   open), so the name carries the warning. */
+.relay-refused { color: var(--danger); text-decoration: underline dotted; cursor: pointer; }
+.relay-said {
+  margin: 2px 0 6px 13px; font-family: var(--font); font-size: 11px;
+  line-height: 1.45; color: var(--danger); overflow-wrap: anywhere;
+}
+
+/* What each relay did with the connect code. Orange for a relay that kept nothing: it
+   still carries QR and URL sessions. */
+.relay-code { flex: none; font-size: 10px; letter-spacing: 0.02em; cursor: help; }
+.code-kept { color: var(--ok); }
+.code-missing { color: var(--warn); }
+.code-unknown { color: var(--muted); }
+
+.install-link {
+  display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 600;
+  color: var(--accent); text-decoration: none;
+}
+.install-link:hover { text-decoration: underline; }
+
+.route-section { margin-top: 16px; }
+.route-switch {
+  padding: 5px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 500;
+  color: var(--muted); background: transparent; border: 1px solid var(--border);
+  cursor: pointer; white-space: nowrap;
+}
+.route-switch:hover:not(:disabled) { color: var(--text); }
+.route-switch:disabled { cursor: default; }
