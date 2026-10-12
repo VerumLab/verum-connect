@@ -1,7 +1,18 @@
 {
   "name": "@verumlab/connect-dapp",
   "version": "0.1.0",
+  "description": "Verum Connect for dapps: an EIP-1193 provider that pairs with a wallet over nostr relays.",
   "license": "MIT",
+  "author": "Verum LLC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VerumLab/verum-connect.git",
+    "directory": "packages/dapp/shared/core"
+  },
+  "homepage": "https://github.com/VerumLab/verum-connect#readme",
+  "bugs": {
+    "url": "https://github.com/VerumLab/verum-connect/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -27,5 +38,8 @@
   },
   "devDependencies": {
     "typescript": "^5.6.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -35,8 +35,9 @@ first open. A pairing link brings its own relays either way.
 
 1. Bump the version in the artifact's `package.json`, commit, and tag the commit
    `hub-v<version>` or `bookmarklet-v<version>`.
-2. Stage and upload it ([publishing.md](docs/publishing.md)), then add a row with the
-   source tag and both addresses, and update the version in the README.
+2. Stage it with `node scripts/prepare-deploy.mjs <hub|bookmarklet>`, upload the deploy folder to
+   IPFS and Arweave, then add a row with the source tag and both addresses, and update the
+   version in the README.
 3. Check it against the tag:
 
 ```bash
