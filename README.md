@@ -18,7 +18,7 @@ node scripts/verify-deploy.mjs <cid> --no-build     # verify gateway serves the 
 Use any injected wallet with Verum Connect, no wallet integration required. Deployed: [version 0.1.0](DEPLOYED.md#hub).
 
 ```bash
-npm run deploy:hub                                  # upload the deploy folder to IPFS or Arweave
+node scripts/prepare-deploy.mjs hub                 # after build upload the deploy folder to IPFS or Arweave
 node scripts/verify-deploy.mjs <cid> --no-build     # verify gateway serves the deployed bytes   
 ```
 

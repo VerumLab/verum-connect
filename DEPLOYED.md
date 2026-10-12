@@ -1,13 +1,15 @@
 # Deployed
 
-What is published, so an address can be matched to a source. Add a row for every
-publish. Links open the deployed source through a gateway.
+Links open the deployed source through a gateway.
 
 ## Hub
 
+The hub links carry the dapp SDK's default relays (`?relays=`), so a typed connect code works on
+first open. A pairing link brings its own relays either way.
+
 | Version | Source | IPFS CID | Arweave tx |
 |---|---|---|---|
-| 0.1.0 | — | [`bafybeidqjp5…odkaeq`](https://bafybeidqjp5yb4zpc3boglxiw6rn7qkrfdqpqaa52o66lzf3oywiodkaeq.ipfs.inbrowser.link/) | [`I6jVLQ7PK3fX…gsd9hE`](https://eounklioz4vxpv4jtq3tzfmzg6vje3ev5t34b2pac4si4cy56yiq.ar.io/I6jVLQ7PK3fXiZw3PJWZN6qSbJXs98Dp4Bckjgsd9hE/) |
+| 0.1.0 | — | [`bafybeidqjp5…odkaeq`](https://bafybeidqjp5yb4zpc3boglxiw6rn7qkrfdqpqaa52o66lzf3oywiodkaeq.ipfs.inbrowser.link/?relays=wss://relay.damus.io,wss://nos.lol,wss://relay.primal.net,wss://offchain.pub) | [`I6jVLQ7PK3fX…gsd9hE`](https://eounklioz4vxpv4jtq3tzfmzg6vje3ev5t34b2pac4si4cy56yiq.ar.io/I6jVLQ7PK3fXiZw3PJWZN6qSbJXs98Dp4Bckjgsd9hE/?relays=wss://relay.damus.io,wss://nos.lol,wss://relay.primal.net,wss://offchain.pub) |
 
 ## Bookmarklet
 

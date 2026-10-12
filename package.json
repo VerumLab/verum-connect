@@ -24,9 +24,7 @@
     "dev:web3onboard": "npm run dev -w @verumlab/web3onboard-demo",
     "test": "npm run build && node --test packages/shared/protocol/test/*.test.mjs test/*.test.mjs",
     "relay:check": "node scripts/relay-check.mjs",
-    "typecheck": "tsc -b packages/shared/protocol packages/dapp/shared/core packages/dapp/shared/ui packages/dapp/sdk/wagmi packages/dapp/sdk/react packages/wallet/sdk",
-    "deploy:hub": "node scripts/prepare-deploy.mjs hub",
-    "deploy:demo": "node scripts/prepare-deploy.mjs demo"
+    "typecheck": "tsc -b packages/shared/protocol packages/dapp/shared/core packages/dapp/shared/ui packages/dapp/sdk/wagmi packages/dapp/sdk/react packages/wallet/sdk"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
