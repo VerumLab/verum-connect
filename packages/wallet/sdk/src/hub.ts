@@ -26,6 +26,9 @@ import {
   conversationKey as makeConversationKey,
   newRequestId,
   parseEnvelope,
+  AZGUARD_EVENT,
+  aztecNetworkName,
+  type AztecChainInfo,
   type DappMetadata,
   type Envelope,
   type PairingNomination,
@@ -97,6 +100,12 @@ export interface HubSession {
   pending: RpcRequestMessage[];
   connectedAt: number;
   lastActivity: number;
+  /**
+   * What the hub can see of this dapp's Aztec side: the network its discovery named, and
+   * the account where the wallet's answers are plain (Azguard's own API); end to end
+   * they are not.
+   */
+  aztec?: { network?: string; account?: string; emojis?: string };
 }
 
 interface PersistedSession {
@@ -114,6 +123,8 @@ export interface HubState {
   accounts: string[];
   chainId: string;
   walletName: string | null;
+  /** Beside the Ethereum wallet: the one Aztec calls go to. */
+  aztecWalletName: string | null;
   relayStatuses: Record<string, RelayStatus>;
 }
 
@@ -140,6 +151,10 @@ export class Hub {
 
   private wallet: Eip1193Provider | null = null;
   private walletName: string | null = null;
+  private aztecWallet: Eip1193Provider | null = null;
+  private aztecWalletName: string | null = null;
+  /** The session whose dapp last called the Aztec wallet: the wallet's messages go there. */
+  private aztecSession: string | null = null;
   private accounts: string[] = [];
   private chainId = '0x1';
 
@@ -199,8 +214,37 @@ export class Hub {
     this.notify();
   }
 
+  /**
+   * An Aztec wallet beside the Ethereum one, for a dapp that uses both: Aztec calls go
+   * to it, the rest to the Ethereum wallet. It asks for its own approval per dapp.
+   */
+  attachAztecWallet(provider: Eip1193Provider, name: string): void {
+    this.aztecWallet = provider;
+    this.aztecWalletName = name;
+    provider.on?.(AZGUARD_EVENT, (data: unknown) => {
+      if (this.aztecWallet !== provider || !this.aztecSession) return;
+      void this.channels.get(this.aztecSession)?.send({ type: 'event', event: AZGUARD_EVENT, data } as Envelope);
+      const update = data as { event?: string; data?: { accounts?: string[] } };
+      if (update.event === 'session_updated') this.noteAztecAccount(this.aztecSession, update.data);
+    });
+    // The hub's own channel to the wallet has emojis of its own, which the wallet shows.
+    provider.on?.('aztec_emojis', (data: unknown) => {
+      const session = this.aztecWallet === provider && this.aztecSession ? this.sessions.get(this.aztecSession) : null;
+      if (!session) return;
+      session.aztec = { ...session.aztec, emojis: (data as { emojis: string }).emojis };
+      this.notify();
+    });
+    this.notify();
+  }
+
+  forgetAztecWallet(): void {
+    this.aztecWallet = null;
+    this.aztecWalletName = null;
+    this.notify();
+  }
+
   get hasWallet(): boolean {
-    return this.wallet !== null;
+    return this.wallet !== null || this.aztecWallet !== null;
   }
 
   /**
@@ -633,25 +677,29 @@ export class Hub {
     const channel = this.channels.get(sessionId);
     if (!channel) return;
 
-    if (!this.wallet) {
+    const aztec = /^(aztec|azguard)_/.test(request.method);
+    const wallet = aztec ? this.aztecWallet : this.wallet;
+    if (!wallet) {
       await channel.send({
         type: 'rpc_response',
         id: request.id,
-        error: { code: ERROR_CODES.disconnected, message: 'hub: no wallet connected' },
+        error: { code: ERROR_CODES.disconnected, message: `hub: no ${aztec ? 'Aztec ' : ''}wallet connected` },
       } as Envelope);
       return;
     }
 
+    if (aztec) this.aztecSession = sessionId;
     try {
-      const result = await this.wallet.request({
+      const result = await wallet.request({
         method: request.method,
         params: request.params,
       });
       await channel.send({ type: 'rpc_response', id: request.id, result } as Envelope);
+      if (aztec) this.noteAztec(sessionId, request, result);
 
       // Chain switches change state for every session, so resync afterwards.
       if (request.method === 'wallet_switchEthereumChain') {
-        const chainId = (await this.wallet.request({ method: 'eth_chainId' })) as string;
+        const chainId = (await wallet.request({ method: 'eth_chainId' })) as string;
         this.applyChainChange(chainId);
       }
     } catch (err) {
@@ -665,6 +713,27 @@ export class Hub {
         },
       } as Envelope);
     }
+  }
+
+  /** The network from the dapp's discovery; the account from Azguard's own connect. */
+  private noteAztec(sessionId: string, request: RpcRequestMessage, result: unknown): void {
+    const session = this.sessions.get(sessionId);
+    const arg = (request.params?.[0] ?? {}) as { chainInfo?: AztecChainInfo; method?: string };
+    if (!session) return;
+    if (request.method === 'aztec_call' && arg.chainInfo) {
+      session.aztec = { ...session.aztec, network: aztecNetworkName(arg.chainInfo) };
+      this.notify();
+    }
+    if (request.method === 'azguard_request' && arg.method === 'connect') this.noteAztecAccount(sessionId, result);
+  }
+
+  private noteAztecAccount(sessionId: string, session: unknown): void {
+    const found = this.sessions.get(sessionId);
+    const account = (session as { accounts?: string[] } | undefined)?.accounts?.[0];
+    if (!found || !account) return;
+    // Azguard names accounts as chain-qualified ids: `aztec:<chain>:<address>`.
+    found.aztec = { ...found.aztec, account: account.split(':').pop() };
+    this.notify();
   }
 
   private async drainPending(sessionId: string): Promise<void> {
@@ -775,6 +844,7 @@ export class Hub {
       accounts: this.accounts,
       chainId: this.chainId,
       walletName: this.walletName,
+      aztecWalletName: this.aztecWalletName,
       relayStatuses: this.mergedRelayStatuses(),
     };
   }

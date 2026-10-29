@@ -7,6 +7,12 @@
 // Defined by @verumlab/connect-wallet; re-exported so the hub's UI reaches for it
 // from one place.
 import type { Eip1193Provider } from '@verumlab/connect-wallet';
+import {
+  azguardProvider,
+  aztecWalletProvider,
+  findAzguard,
+  type AzguardWalletInfo,
+} from '@verumlab/connect-protocol';
 
 export type { Eip1193Provider };
 
@@ -43,6 +49,8 @@ export function discoverWallets(
     const onAnnounce = (event: Event) => {
       const detail = (event as CustomEvent<Eip6963ProviderDetail>).detail;
       if (!detail?.info || !detail.provider) return;
+      // Verum Connect's own extension, which this hub would otherwise connect to itself.
+      if (detail.info.rdns === 'me.verum.connect') return;
       const key = detail.info.uuid;
       if (found.has(key)) return;
       found.set(key, {
@@ -67,7 +75,7 @@ export function discoverWallets(
       // this entry.
       if (found.size === 0) {
         const injected = (globalThis as any).ethereum as Eip1193Provider | undefined;
-        if (injected) {
+        if (injected && !(injected as { isVerumConnect?: boolean }).isVerumConnect) {
           found.set('injected', {
             id: 'injected',
             name: detectInjectedName(injected),
@@ -79,6 +87,32 @@ export function discoverWallets(
       resolve([...found.values()]);
     }, timeoutMs);
   });
+}
+
+/**
+ * Aztec wallets, only where browser extensions run: Azguard, found as an injected
+ * object, its info read without a prompt. It answers both ways a dapp reaches it, its
+ * own API and Aztec's extension discovery, so its provider serves both.
+ */
+export async function aztecWallets(): Promise<DiscoveredWallet[]> {
+  if (isMobileLike()) return [];
+  const found: DiscoveredWallet[] = [];
+  // Azguard's script can arrive late, behind a locked or starting wallet.
+  const azguard = await findAzguard(10_000);
+  if (azguard) {
+    const info = (await azguard.createClient().request('get_wallet_info').catch(() => null)) as AzguardWalletInfo | null;
+    const own = azguardProvider(azguard);
+    const sdk = aztecWalletProvider();
+    const provider = {
+      isAztec: true,
+      request: (args: { method: string; params?: unknown[] }) =>
+        (args.method.startsWith('aztec_') ? sdk : own).request(args),
+      on: (event: string, listener: (data: unknown) => void) =>
+        (event === 'aztec_emojis' ? sdk : own).on(event, listener),
+    };
+    found.push({ id: 'azguard', name: info?.name ?? 'Azguard', icon: info?.logo, provider });
+  }
+  return found;
 }
 
 function detectInjectedName(provider: unknown): string {
@@ -97,7 +131,8 @@ function detectInjectedName(provider: unknown): string {
  * deep-link handoff; trivially spoofable, so never security-relevant.
  */
 export function hasInjectedWallet(): boolean {
-  return typeof (globalThis as any).ethereum !== 'undefined';
+  const injected = (globalThis as any).ethereum;
+  return typeof injected !== 'undefined' && !injected.isVerumConnect;
 }
 
 /**

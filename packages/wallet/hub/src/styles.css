@@ -281,6 +281,8 @@ header h1 .section::before { content: " · "; }
   line-height: 1; padding: 4px 6px; min-height: 0; cursor: pointer;
 }
 .sheet .actions { margin-top: 14px; }
+.sheet-section + .sheet-section { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sheet-section .meta-grid { margin-bottom: 0; }
 .sheet .actions button { flex: 1; }
 
 /* ---- Scanner. ---- */

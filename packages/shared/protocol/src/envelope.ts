@@ -104,11 +104,12 @@ export interface RpcResponseMessage {
 }
 
 /** Hub -> dapp. Mirrors EIP-1193 events so the dapp can react to the user
- *  switching accounts or chains inside the wallet. */
+ *  switching accounts or chains inside the wallet; `azguard_event` carries Azguard's
+ *  session events to its dapp (azguard.ts). */
 export interface EventMessage {
   type: 'event';
   v: number;
-  event: 'accountsChanged' | 'chainChanged' | 'disconnect';
+  event: 'accountsChanged' | 'chainChanged' | 'disconnect' | 'azguard_event';
   data: unknown;
 }
 

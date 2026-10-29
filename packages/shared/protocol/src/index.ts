@@ -11,3 +11,5 @@ export * from './lookup.js';
 export * from './pending.js';
 export * from './channel.js';
 export * from './storage.js';
+export * from './aztec.js';
+export * from './azguard.js';

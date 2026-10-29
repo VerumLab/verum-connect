@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Verum Connect",
+  "version": "0.1.0",
+  "description": "Connects any dapp, Ethereum or Aztec, to a wallet on another device over nostr relays.",
+  "minimum_chrome_version": "116",
+  "permissions": ["sidePanel", "storage"],
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "panel.html" },
+  "action": { "default_title": "Verum Connect" },
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_start" },
+    { "matches": ["<all_urls>"], "js": ["page.js"], "run_at": "document_start", "world": "MAIN" }
+  ]
+}

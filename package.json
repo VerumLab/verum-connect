@@ -10,12 +10,13 @@
     "packages/dapp/sdk/react",
     "packages/dapp/sdk/wagmi",
     "packages/dapp/bookmarklet",
+    "packages/dapp/extension",
     "packages/dapp/sdk/examples/*",
     "packages/wallet/sdk",
     "packages/wallet/hub"
   ],
   "scripts": {
-    "build": "npm run build -w @verumlab/connect-protocol && npm run build -w @verumlab/connect-dapp && npm run build -w @verumlab/connect-wallet && npm run build -w @verumlab/connect-ui && npm run build -w @verumlab/connect-wagmi && npm run build -w @verumlab/connect-react && npm run build -w @verumlab/connect-hub && npm run build -w @verumlab/connect-bookmarklet",
+    "build": "npm run build -w @verumlab/connect-protocol && npm run build -w @verumlab/connect-dapp && npm run build -w @verumlab/connect-wallet && npm run build -w @verumlab/connect-ui && npm run build -w @verumlab/connect-wagmi && npm run build -w @verumlab/connect-react && npm run build -w @verumlab/connect-hub && npm run build -w @verumlab/connect-bookmarklet && npm run build -w @verumlab/connect-extension",
     "build:hub": "npm run build -w @verumlab/connect-hub",
     "dev:hub": "npm run dev -w @verumlab/connect-hub",
     "dev:demo": "npm run dev -w @verumlab/standalone-demo",

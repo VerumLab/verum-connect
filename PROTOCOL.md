@@ -182,6 +182,7 @@ JSON in `content`. Every envelope has `type` and `v` (`1`).
 { "type": "rpc_response",  "v": 1, "id": "<echoed>", "error": { "code": -32603, "message": "…" } }
 { "type": "event",         "v": 1, "event": "accountsChanged" | "chainChanged" | "disconnect", "data": <any> }
 { "type": "disconnect",    "v": 1, "reason": "…" }
+{ "type": "part",          "v": 1, "id": "<hex>", "index": 0, "count": 3, "data": "<base64>" }
 ```
 
 - `description`, `icon`, `wallet`, `reason` are optional. `chainId` is a hex quantity;
@@ -190,6 +191,11 @@ JSON in `content`. Every envelope has `type` and `v` (`1`).
   hub MUST ignore an ack whose nonce is not the one it sent; a response with an
   unknown id is dropped.
 - `error` wins over `result` if both are present.
+- An envelope whose JSON exceeds 60 000 bytes (NIP-44 takes at most 65 535) is sent as
+  `part`s instead: its gzip, base64, in pieces of 48 000 characters, one event each,
+  150 ms apart against relays' rate limits. The receiver joins the parts of one `id` in
+  `index` order, unzips them and handles the result as the envelope itself; parts of a
+  message not whole after 5 minutes are dropped.
 - `v` ≠ 1: reject before reading `type`. Unknown `type` or field within `v: 1`: ignore.
 
 ---
@@ -289,6 +295,43 @@ Unlisted methods are **prompting**. Chain reads never cross the relay — `eth_c
 the dapp serves them from its own RPC, or fails them if it has none.
 
 The hub relays requests unchanged; the wallet's own sheet is the approval.
+
+---
+
+## Aztec
+
+An Aztec dapp finds its wallet by Aztec's own extension protocol: a discovery posted
+to the window, answered with a `MessagePort`, then a key exchange and encrypted messages
+on that port. On the dapp's device the extension answers that discovery as the wallet
+"Verum Connect"; on the wallet's device the hub is the dapp that discovers the Aztec
+wallet. So there are two channels, each with its own key and its own emojis: the dapp's
+match those beside it on its device, the wallet's those in the hub. Between them each
+call crosses the session decrypted.
+
+| Direction | Envelope | Content |
+|---|---|---|
+| dapp → hub | `rpc_request` `aztec_call` | `[{ type, args, chainInfo, appId }]`, a wallet call; answered with the wallet's result |
+| dapp → hub | `rpc_request` `aztec_blob_has` | `[[hash, …]]`; answered with the hashes the hub lacks |
+| dapp → hub | `rpc_request` `aztec_blob_put` | `[{ hash, value }]`, one large value as JSON text; refused unless `hash` is its SHA-256 |
+
+- A call carries contracts' artifacts, hundreds of kilobytes to megabytes. Each value in
+  its `args` of 32 kB or more as JSON crosses once: replaced by `{ "$blob": hash }`, sent
+  by `aztec_blob_put` only if `aztec_blob_has` names it, kept by the hub across visits.
+- An Aztec session carries no Ethereum accounts: with only an Aztec wallet behind it,
+  `session_ready` and `hello` have `accounts: []` and `chainId: "0x0"`. The network is
+  the one the dapp's discovery names, which the wallet checks.
+- Liveness probes are answered on each side and do not cross.
+
+**Azguard's own API.** Azguard also injects `window.azguard`, which dapps use through
+its client: requests by name and session events, unencrypted. The bookmarklet puts a
+stand-in on the dapp's page and the hub holds the real one, found like an injected
+Ethereum wallet. `get_session` is answered `null` on the dapp's side while nothing is
+paired, so a dapp looking for its stored session does not open a pairing.
+
+| Direction | Envelope | Content |
+|---|---|---|
+| dapp → hub | `rpc_request` `azguard_request` | `[{ method, params }]`, answered with Azguard's result |
+| hub → dapp | `event` `azguard_event` | `{ event, data }`: `session_updated` or `session_closed` |
 
 ---
 

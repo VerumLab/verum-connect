@@ -27,6 +27,7 @@ import {
 } from '@verumlab/connect-wallet';
 import {
   deepLinks,
+  aztecWallets,
   discoverWallets,
   hasInjectedWallet,
   isMobileLike,
@@ -243,10 +244,17 @@ async function boot(): Promise<void> {
   // would drop sessions not yet read.
   await hub.restore();
 
-  wallets = await discoverWallets((late) => {
-    wallets = late;
+  let aztec: DiscoveredWallet[] = [];
+  let injected = await discoverWallets((late) => {
+    injected = late;
+    wallets = [...late, ...aztec];
     render(hub.state);
   });
+  wallets = injected;
+  render(hub.state);
+  // Found after first paint: an extension's object appears when its content script runs.
+  aztec = await aztecWallets();
+  wallets = [...injected, ...aztec];
   render(hub.state);
 
   if (hub.hasWallet) void hub.sayHello();
@@ -302,7 +310,8 @@ async function connectWallet(wallet: DiscoveredWallet): Promise<void> {
   connectingWalletId = wallet.id;
   render(hub.state);
   try {
-    await hub.attachWallet(wallet.provider, wallet.name);
+    if (isAztec(wallet)) hub.attachAztecWallet(wallet.provider, wallet.name);
+    else await hub.attachWallet(wallet.provider, wallet.name);
     revokeUnsupported = false;
     await hub.sayHello();
     if (pairing) await startPairing();
@@ -374,7 +383,7 @@ function render(state: HubState): void {
     return;
   }
 
-  if (!state.walletName) {
+  if (!state.walletName && !state.aztecWalletName) {
     if (revokeUnsupported) app.append(revokeNotice());
     app.append(walletPicker());
 
@@ -400,7 +409,7 @@ function render(state: HubState): void {
   if (others.length > 0) app.append(sessionList(others));
   app.append(relayStrip(state.relayStatuses));
 
-  if (accountSheetOpen && state.walletName) app.append(accountSheet(state));
+  if (accountSheetOpen && (state.walletName || state.aztecWalletName)) app.append(accountSheet(state));
   else accountSheetOpen = false;
 
   if (settingsOpen) app.append(settingsSheet());
@@ -436,7 +445,7 @@ function header(state: HubState, canPair: boolean): HTMLElement {
   actions.className = 'header-actions';
   el.append(actions);
 
-  if (state.walletName) {
+  if (state.walletName || state.aztecWalletName) {
     // Only once a session owns the page; with nothing connected pairing is the
     // subject, in a card.
     let pair: HTMLButtonElement | null = null;
@@ -461,9 +470,8 @@ function header(state: HubState, canPair: boolean): HTMLElement {
     chip.title = 'Account options';
 
     const strong = document.createElement('strong');
-    strong.textContent = state.walletName;
+    strong.textContent = [state.walletName, state.aztecWalletName].filter(Boolean).join(' + ');
     chip.append(strong);
-    if (state.accounts[0]) chip.append(` · ${shortAddress(state.accounts[0])}`);
 
     chip.onclick = () => {
       accountSheetOpen = !accountSheetOpen;
@@ -501,7 +509,7 @@ function activeCard(session: HubSession, state: HubState): HTMLElement {
 
   // Honest about what the session can do: without a wallet every prompting request
   // comes back 4900, so calling it live would be a lie.
-  card.append(eyebrow(state.walletName ? 'Live connection' : 'Paired — no wallet connected'));
+  card.append(eyebrow(state.walletName || state.aztecWalletName ? 'Live connection' : 'Paired — no wallet connected'));
   card.append(identityBlock(session, 44));
 
   const codeRow = document.createElement('div');
@@ -521,6 +529,15 @@ function activeCard(session: HubSession, state: HubState): HTMLElement {
     metaItem('Account', state.accounts[0] ? shortAddress(state.accounts[0]) : '—'),
     metaItem('Chain', chainName(state.chainId)),
   );
+  // End to end the hub cannot read which account the dapp got; Azguard's own API says.
+  if (state.aztecWalletName) {
+    grid.append(
+      metaItem('Aztec account', session.aztec?.account ? shortAddress(session.aztec.account) : `Chosen in ${state.aztecWalletName}`),
+      metaItem('Aztec network', session.aztec?.network ?? '—'),
+    );
+    // The hub's own channel to the wallet: the wallet shows the same emojis.
+    if (session.aztec?.emojis) grid.append(metaItem(`Match in ${state.aztecWalletName}`, session.aztec.emojis));
+  }
   card.append(grid);
 
   // Said only when it happened: a dapp whose only live relays sit past the cap would
@@ -669,6 +686,8 @@ function walletPicker(): HTMLElement {
   return notice;
 }
 
+const isAztec = (wallet: DiscoveredWallet): boolean => (wallet.provider as { isAztec?: boolean }).isAztec === true;
+
 /**
  * One-time trust prompt for this hub build: the wallet stays the authority on every
  * signature and this page can only propose.
@@ -775,7 +794,7 @@ function accountSheet(state: HubState): HTMLElement {
   const head = document.createElement('div');
   head.className = 'sheet-head';
   const h3 = document.createElement('h3');
-  h3.textContent = state.walletName ?? 'Connected wallet';
+  h3.textContent = 'Connected wallets';
   const close = document.createElement('button');
   close.className = 'sheet-close';
   close.textContent = '✕';
@@ -809,9 +828,53 @@ function accountSheet(state: HubState): HTMLElement {
     });
 
   actions.append(switchAccount, disconnect);
-  sheet.append(head, grid, actions);
+  sheet.append(head);
+  // Both kinds, for a dapp that needs an Ethereum wallet for its L1 side and an Aztec
+  // one for the rest: the one not connected offers its wallets.
+  if (state.walletName) sheet.append(section(`EVM · ${state.walletName}`, grid, actions));
+  else sheet.append(connectSection('EVM', wallets.filter((wallet) => !isAztec(wallet))));
+
+  // The Aztec wallet beside it: it picks its accounts per dapp, in its own approval.
+  if (state.aztecWalletName) {
+    const aztecActions = document.createElement('div');
+    aztecActions.className = 'actions';
+    const forget = document.createElement('button');
+    forget.className = 'danger';
+    forget.textContent = 'Disconnect wallet';
+    forget.onclick = () => hub.forgetAztecWallet();
+    aztecActions.append(forget);
+    sheet.append(section(`Aztec · ${state.aztecWalletName}`, aztecActions));
+  } else {
+    sheet.append(connectSection('Aztec', wallets.filter(isAztec)));
+  }
   backdrop.append(sheet);
   return backdrop;
+}
+
+function connectSection(title: string, offered: DiscoveredWallet[]): HTMLElement {
+  const list = document.createElement('div');
+  list.className = 'actions';
+  for (const wallet of offered) {
+    const button = document.createElement('button');
+    button.textContent = connectingWalletId === wallet.id ? 'Connecting…' : `Connect ${wallet.name}`;
+    button.disabled = busy;
+    button.onclick = () => requestWalletConnect(wallet);
+    list.append(button);
+  }
+  if (offered.length === 0) {
+    const none = document.createElement('p');
+    none.style.cssText = 'margin:0;font-size:13px;color:var(--muted)';
+    none.textContent = 'No wallet of this kind in this browser.';
+    list.append(none);
+  }
+  return section(title, list);
+}
+
+function section(title: string, ...content: HTMLElement[]): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'sheet-section';
+  el.append(eyebrow(title), ...content);
+  return el;
 }
 
 function closeAccountSheet(): void {

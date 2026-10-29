@@ -150,7 +150,8 @@ type ProviderEvent =
   | 'display_uri'
   | 'session_changed'
   | 'code_changed'
-  | 'pending_connects_changed';
+  | 'pending_connects_changed'
+  | 'azguard_event';
 
 interface PendingRequest {
   id: string;
@@ -1257,6 +1258,8 @@ export class VerumConnectProvider extends Eip1193Surface<ProviderEvent> {
           this.emit('chainChanged', this.chainId);
         } else if (envelope.event === 'disconnect') {
           void this.disconnect();
+        } else if (envelope.event === 'azguard_event') {
+          this.emit(envelope.event, envelope.data);
         }
         return;
       }

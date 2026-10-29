@@ -17,6 +17,21 @@ import { fingerprint } from './fingerprint.js';
 import { PROTOCOL_VERSION, parseEnvelope, type Envelope } from './envelope.js';
 import type { RelayPool } from './relay.js';
 
+/** NIP-44's plaintext limit, less room for the envelope around a part. */
+const WHOLE_LIMIT = 60_000;
+/** Base64 characters per part. */
+const PART_SIZE = 48_000;
+/** Between parts, so a relay's rate limit is not tripped by a burst. */
+const PART_PACE_MS = 150;
+/** A message whose parts stop arriving is dropped after this. */
+const PART_TTL_MS = 5 * 60_000;
+
+interface Partial {
+  parts: string[];
+  received: number;
+  startedAt: number;
+}
+
 export interface ChannelOptions {
   pool: RelayPool;
   secretKey: string;
@@ -42,6 +57,8 @@ export class Channel {
    * is dropped, closing the replay window clock skew leaves open.
    */
   private lastSeenAt = 0;
+  /** Messages too large for one event, by id, while their parts arrive. */
+  private readonly partials = new Map<string, Partial>();
 
   constructor(opts: ChannelOptions) {
     this.pool = opts.pool;
@@ -80,8 +97,24 @@ export class Channel {
     return () => this.handlers.delete(handler);
   }
 
+  /**
+   * One event, or for a message past NIP-44's limit (an Aztec contract's artifact) its
+   * gzip in numbered `part` envelopes, one event each, joined again on the other side.
+   */
   async send(envelope: Omit<Envelope, 'v'> & { v?: number }): Promise<void> {
     const payload = JSON.stringify({ ...envelope, v: PROTOCOL_VERSION });
+    if (new TextEncoder().encode(payload).length <= WHOLE_LIMIT) return this.publish(payload);
+    const packed = await gzipBase64(payload);
+    const id = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join('');
+    const count = Math.ceil(packed.length / PART_SIZE);
+    for (let index = 0; index < count; index++) {
+      if (index > 0) await new Promise((resolve) => setTimeout(resolve, PART_PACE_MS));
+      const data = packed.slice(index * PART_SIZE, (index + 1) * PART_SIZE);
+      await this.publish(JSON.stringify({ type: 'part', v: PROTOCOL_VERSION, id, index, count, data }));
+    }
+  }
+
+  private async publish(payload: string): Promise<void> {
     const content = encrypt(payload, this.conversationKey);
     const event = buildEvent(this.kind, content, this.peerPublicKey, this.secretKey);
     await this.pool.publish(event);
@@ -104,6 +137,32 @@ export class Channel {
     }
 
     this.lastSeenAt = Math.max(this.lastSeenAt, event.created_at);
+    if ((envelope as { type: string }).type === 'part') return void this.collect(envelope as unknown as PartMessage);
+    this.dispatch(envelope);
+  }
+
+  /** A part kept until its message is whole; then the message as if it came in one event. */
+  private async collect(part: PartMessage): Promise<void> {
+    const { id, index, count, data } = part;
+    if (typeof id !== 'string' || !Number.isInteger(index) || !Number.isInteger(count) || index < 0 || index >= count) return;
+    const now = Date.now();
+    for (const [key, open] of this.partials) if (now - open.startedAt > PART_TTL_MS) this.partials.delete(key);
+    let open = this.partials.get(id);
+    if (!open) this.partials.set(id, (open = { parts: new Array(count), received: 0, startedAt: now }));
+    if (open.parts.length !== count || open.parts[index] !== undefined) return;
+    open.parts[index] = data;
+    if (++open.received < count) return;
+    this.partials.delete(id);
+    let envelope: Envelope;
+    try {
+      envelope = parseEnvelope(await gunzipBase64(open.parts.join('')));
+    } catch {
+      return;
+    }
+    if ((envelope as { type: string }).type !== 'part') this.dispatch(envelope);
+  }
+
+  private dispatch(envelope: Envelope): void {
     for (const handler of this.handlers) {
       try {
         handler(envelope);
@@ -112,4 +171,27 @@ export class Channel {
       }
     }
   }
+}
+
+interface PartMessage {
+  type: 'part';
+  v: number;
+  id: string;
+  index: number;
+  count: number;
+  data: string;
+}
+
+async function gzipBase64(text: string): Promise<string> {
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+
+async function gunzipBase64(packed: string): Promise<string> {
+  const bytes = Uint8Array.from(atob(packed), (c) => c.charCodeAt(0));
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Response(stream).text();
 }

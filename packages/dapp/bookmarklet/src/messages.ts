@@ -75,7 +75,7 @@ export interface SessionMessage {
 export interface EventMessage {
   v: typeof PROTOCOL;
   type: 'event';
-  event: 'accountsChanged' | 'chainChanged' | 'disconnect';
+  event: 'accountsChanged' | 'chainChanged' | 'disconnect' | 'azguard_event';
   data: unknown;
 }
 

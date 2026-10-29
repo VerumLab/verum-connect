@@ -262,7 +262,7 @@ const installPage = `<!doctype html>
         <h2>A wallet for a dapp that never asked</h2>
 
         <div class="row">
-          <a class="drag" id="drag" href="#"><svg viewBox="0 0 140 104" aria-hidden="true"><path d="M69.9988 45.206L140 0.454L69.9988 103.096L0 0.454L69.9988 45.206Z" fill="#8cc2ff"/><path d="M69.9988 45.206L140 0.454L69.9988 103.096Z" fill="#3d7fd1"/></svg><span>Verum Connect</span></a>
+          <a class="drag" id="drag" href="#"><svg viewBox="0 0 140 104" aria-hidden="true"><path d="M69.9988 45.206L140 0.454L69.9988 103.096L0 0.454L69.9988 45.206Z" fill="#8cc2ff"/><path d="M69.9988 45.206L140 0.454L69.9988 103.096Z" fill="#3d7fd1"/></svg><span>verum-connect</span></a>
           <button class="copy" id="copy" type="button"><svg class="verum-mark" viewBox="0 0 140 104" aria-hidden="true"><path d="M69.9988 45.206L140 0.454L69.9988 103.096L0 0.454L69.9988 45.206Z" fill="#8cc2ff"/><path d="M69.9988 45.206L140 0.454L69.9988 103.096Z" fill="#3d7fd1"/></svg><span>Copy</span></button>
         </div>
         <p class="muted" id="note"></p>
@@ -270,7 +270,7 @@ const installPage = `<!doctype html>
         <h3>Install</h3>
         <ol class="muted" id="install-drag">
           <li>If the bar is hidden, press <kbd id="shortcut"></kbd> to show it.</li>
-          <li>Drag the <strong>Verum Connect</strong> button to the bar.</li>
+          <li>Drag the <strong>verum-connect</strong> button to the bar.</li>
         </ol>
 
         <!-- Drawn rather than filmed: the bookmarks bar is the Favourites bar
@@ -278,8 +278,8 @@ const installPage = `<!doctype html>
              place with a different drop indicator, so a recording of one
              browser is wrong for everyone using another. -->
         <div class="demo" id="demo" aria-hidden="true">
-          <div class="demo-bar"><span class="demo-chip">Verum Connect</span></div>
-          <div class="demo-pill">Verum Connect</div>
+          <div class="demo-bar"><span class="demo-chip">verum-connect</span></div>
+          <div class="demo-pill">verum-connect</div>
           <svg class="demo-hand" viewBox="0 0 28 36" aria-hidden="true">
             <path d="M12 2.5c-1.6 0-2.7 1.2-2.7 2.8v12.2l-2-2a2.6 2.6 0 0 0-3.8 3.5l6.1 8a6.2 6.2 0 0 0 5 2.5h3a6 6 0 0 0 6-6v-7.2a2.4 2.4 0 0 0-4.2-1.6 2.4 2.4 0 0 0-4.2-1.1V5.3c0-1.6-1.2-2.8-3.2-2.8Z" fill="#fff" stroke="#25231f" stroke-width="1.5" stroke-linejoin="round"/>
             <path d="M17 18v-3" fill="none" stroke="#777" stroke-width="1.2" stroke-linecap="round"/>
@@ -311,7 +311,7 @@ const installPage = `<!doctype html>
               <div class="mobile-demo" aria-hidden="true">
                 <div class="mobile-screen">
                   <div class="mobile-screen-top">Edit bookmark</div>
-                  <div class="mobile-screen-field"><span class="mobile-screen-label">Name</span><span class="mobile-screen-value">verum-connection</span></div>
+                  <div class="mobile-screen-field"><span class="mobile-screen-label">Name</span><span class="mobile-screen-value">verum-connect</span></div>
                   <div class="mobile-screen-field"><span class="mobile-screen-label">Address / URL</span><span class="mobile-screen-value mobile-url">Paste here</span></div>
                 </div>
               </div>
@@ -345,9 +345,9 @@ const installPage = `<!doctype html>
         window.matchMedia('(hover: hover) and (pointer: fine)').matches ? 'pointer' : 'touch';
 
       document.getElementById('how-add').innerHTML =
-        'Bookmark this page as <strong>verum-connection</strong>.';
+        'Bookmark this page as <strong>verum-connect</strong>.';
       document.getElementById('how-edit').innerHTML =
-        'Open Bookmarks, edit the <strong>verum-connection</strong> bookmark, and paste the code into the <strong>address/URL</strong> field.';
+        'Open Bookmarks, edit the <strong>verum-connect</strong> bookmark, and paste the code into the <strong>address/URL</strong> field.';
 
       /* Every major browser toggles the bookmarks bar with the same chord, on
          the modifier the platform uses for everything else. */

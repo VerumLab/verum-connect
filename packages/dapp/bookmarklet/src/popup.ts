@@ -50,7 +50,7 @@ const app = document.getElementById('app')!;
  */
 interface Session {
   origin: string;
-  win: Window;
+  win: unknown;
   provider: VerumConnectProvider;
   /**
    * One per session, not per repaint: the controller polls, and this card is redrawn
@@ -92,10 +92,26 @@ let elsewhere = false;
 let settingsOpen = false;
 
 /**
- * Whoever showed this first: the page that framed it or the one that opened it.
- * Both are attested by the origin on their messages.
+ * How this panel reaches its page. Here, the window that framed or opened it, its
+ * messages attested by the browser's origin on them; the extension sets its own on
+ * `globalThis.verumPanelTransport` before loading this, with the tab in place of a
+ * window and the origin the browser gave the extension.
  */
-const host: Window | null = window.opener ?? (window.parent !== window ? window.parent : null);
+export interface PanelTransport {
+  /** Whoever showed this first, if anyone. */
+  host: unknown;
+  /** What carries this panel, under the wordmark. */
+  name?: string;
+  send(to: unknown, message: object, origin: string): void;
+  listen(handler: (data: unknown, origin: string, from: unknown) => void): void;
+}
+
+const transport: PanelTransport = (globalThis as { verumPanelTransport?: PanelTransport }).verumPanelTransport ?? {
+  host: window.opener ?? (window.parent !== window ? window.parent : null),
+  send: (to, message, origin) => (to as Window).postMessage(message, origin),
+  listen: (handler) => window.addEventListener('message', (event) => handler(event.data, event.origin, event.source)),
+};
+const host = transport.host;
 
 mountHeader();
 mountTerms();
@@ -110,7 +126,7 @@ if (!host) {
   paintEmpty('Waiting for the page', 'Go back to the dapp tab if this does not move.');
   // Broadcast, as the host's origin is unknown until it answers; this says only that
   // a window is listening.
-  host.postMessage({ v: PROTOCOL, type: 'ready' }, '*');
+  transport.send(host, { v: PROTOCOL, type: 'ready' }, '*');
 }
 
 /**
@@ -129,10 +145,10 @@ function showStandalone(): void {
   app.querySelector('.card')?.append(install);
 }
 
-window.addEventListener('message', (event) => {
-  if (!isVerumMessage(event.data)) return;
-  const message = event.data as ToPopup;
-  const known = session && session.origin === event.origin ? session : null;
+transport.listen((data, origin, from) => {
+  if (!isVerumMessage(data)) return;
+  const message = data as ToPopup;
+  const known = session && session.origin === origin ? session : null;
 
   if (message.type === 'use-panel-done') {
     if (known && routeButton) routeButton.textContent = 'Side panel next time ✓';
@@ -150,8 +166,8 @@ window.addEventListener('message', (event) => {
     // A hello from an origin already here is that dapp knocking again: rebind and
     // answer with the session instead of starting another.
     if (known) {
-      console.info('[verum panel] reattached', event.origin);
-      known.win = event.source as Window;
+      console.info('[verum panel] reattached', origin);
+      known.win = from;
       known.post({ v: PROTOCOL, type: 'ready' });
       if (known.provider.currentAccounts.length > 0) {
         known.post({
@@ -166,11 +182,11 @@ window.addEventListener('message', (event) => {
     }
     // This window belongs to whoever spoke first; a second dapp opens its own.
     if (session) {
-      console.warn('[verum panel] already carrying', session.origin, '— ignoring', event.origin);
+      console.warn('[verum panel] already carrying', session.origin, '— ignoring', origin);
       return;
     }
     elsewhere = message.elsewhere === true;
-    const opened = openSession(event.origin, event.source as Window, message.title, message.icon);
+    const opened = openSession(origin, from, message.title, message.icon);
     // The page may have spoken first (when this window could not see its opener) and
     // waits on `ready`.
     opened.post({ v: PROTOCOL, type: 'ready' });
@@ -179,7 +195,7 @@ window.addEventListener('message', (event) => {
 
   // Both checks: the origin is the browser's word for who is asking, and the window
   // is the one bound to it.
-  if (!known || event.source !== known.win) return;
+  if (!known || from !== known.win) return;
 
   if (message.type === 'request') {
     console.debug('[verum panel] \u2192', known.origin, message.id, message.method);
@@ -242,7 +258,7 @@ function rememberOwner(origin: string | null): void {
   }
 }
 
-function openSession(origin: string, win: Window, title: string, icon: string | undefined): Session {
+function openSession(origin: string, win: unknown, title: string, icon: string | undefined): Session {
   const provider = new VerumConnectProvider({
     hubCid: HUB_CID,
     hubTx: HUB_TX,
@@ -272,12 +288,13 @@ function openSession(origin: string, win: Window, title: string, icon: string | 
     card,
     gen: 0,
     post(message: object): void {
-      this.win.postMessage(message, this.origin);
+      transport.send(this.win, message, this.origin);
     },
   };
   session = live;
 
-  for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const) {
+  // Azguard's session events, for the extension's page.
+  for (const event of ['accountsChanged', 'chainChanged', 'disconnect', 'azguard_event'] as const) {
     provider.on(event, (data: unknown) => {
       console.debug('[verum panel] event', origin, event, data);
       live.post({ v: PROTOCOL, type: 'event', event, data });
@@ -672,7 +689,7 @@ function mountHeader(): void {
   const span = document.createElement('span');
   span.textContent = 'Connect';
   const section = document.createElement('em');
-  section.textContent = 'Bookmarklet';
+  section.textContent = transport.name ?? 'Bookmarklet';
   h1.append(span, section);
   head.append(h1);
   if (window.opener) watchOpener();
